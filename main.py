@@ -3,6 +3,19 @@ import json
 import os
 import importlib.util
 import asyncio
+import pyfiglet
+
+def clear_console():
+    os.system("cls" if os.name == "nt" else "clear")
+
+def print_banner():
+    banner = pyfiglet.figlet_format("2077 multi", font="slant")
+    print(banner)
+
+def print_tokens(tokens):
+    for i, token in enumerate(tokens, start=1):
+        print(f"loading token{i}: {token[:10]}")
+
 
 SNIPE_DB_PATH = "data/snipe_data.json"
 
@@ -70,7 +83,10 @@ def load_commands():
 
 
 COMMANDS = load_commands()
-
+clear_console()
+print_banner()
+print_tokens(TOKENS)
+print()
 
 
 class MyClient(discord.Client):
@@ -209,4 +225,5 @@ MyClient.on_message = _patched_on_message
 if __name__ == "__main__":
 
     asyncio.run(start_all_bots())
+
 
