@@ -4,9 +4,30 @@ import os
 import importlib.util
 import asyncio
 
+SNIPE_DB_PATH = "data/snipe_data.json"
+
+def load_snipe_db():
+    if not os.path.exists("data"):
+        os.makedirs("data")
+
+    if not os.path.exists(SNIPE_DB_PATH):
+        with open(SNIPE_DB_PATH, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+
+    try:
+        with open(SNIPE_DB_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_snipe_db(db):
+    with open(SNIPE_DB_PATH, "w", encoding="utf-8") as f:
+        json.dump(db, f, ensure_ascii=False, indent=2)
+
 
 with open("config.json", "r", encoding="utf-8") as f:
     config = json.load(f)
+
 
 OWNER_ID = config["owner_id"]
 PREFIX = config["prefix"]
@@ -79,11 +100,36 @@ class MyClient(discord.Client):
                 except Exception as e:
                     await message.channel.send(f"Error commands`{cmd_name}`: {e}")
                     print(f"error {cmd_name}: {e}")
-            else:
-                
-                all_cmds = ", ".join(self.COMMANDS.keys())
-                await message.channel.send(f"Lệnh `{cmd_name}` không tồn tại.\n📜 Lệnh có sẵn: {all_cmds}")
 
+
+    async def on_message_delete(self, message):
+        if message.author.bot:
+            return
+        if not message.guild:
+            return
+
+        db = load_snipe_db()
+        key = f"{message.guild.id}:{message.channel.id}"
+
+        attachments = []
+        for att in message.attachments:
+            if att.proxy_url:
+                attachments.append(att.proxy_url)
+            elif att.url:
+                attachments.append(att.url)
+
+        entry = {
+            "content": message.content or "[No content]",
+            "author": str(message.author),
+            "author_id": message.author.id,
+            "deleted_at": discord.utils.utcnow().isoformat(),
+            "attachments": attachments
+        }
+
+        db.setdefault(key, []).insert(0, entry)
+        db[key] = db[key][:10]
+
+        save_snipe_db(db)
 
 
 async def start_all_bots():
@@ -163,3 +209,4 @@ MyClient.on_message = _patched_on_message
 if __name__ == "__main__":
 
     asyncio.run(start_all_bots())
+
