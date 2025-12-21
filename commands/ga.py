@@ -1,3 +1,4 @@
+# dong nay duoc them chi de code tron 100 dong
 import asyncio
 from datetime import datetime, timedelta
 
