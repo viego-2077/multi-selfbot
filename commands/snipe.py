@@ -44,7 +44,7 @@ async def run(message, args):
         if attachments:
             block_lines.extend(attachments)
 
-        block_lines.append("========================")
+        block_lines.append("==============================")
 
         blocks.append("\n".join(block_lines))
 
