@@ -1,39 +1,49 @@
 import time
 import psutil
 import shutil
+import os
 
 name = "stats"
-
 START_TIME = time.time()
 
+def get_docker_memory():
+    try:
+        with open("/sys/fs/cgroup/memory/memory.limit_in_bytes") as f:
+            limit = int(f.read())
+        with open("/sys/fs/cgroup/memory/memory.usage_in_bytes") as f:
+            used = int(f.read())
+        return used / 1024 / 1024, limit / 1024 / 1024
+    except:
+        return None, None
+
 async def run(message, args):
-    uptime_seconds = int(time.time() - START_TIME)
-    days, remainder = divmod(uptime_seconds, 86400)
-    hours, remainder = divmod(remainder, 3600)
-    minutes, seconds = divmod(remainder, 60)
+    uptime = int(time.time() - START_TIME)
+    d, r = divmod(uptime, 86400)
+    h, r = divmod(r, 3600)
+    m, s = divmod(r, 60)
 
-    cpu_percent = psutil.cpu_percent(interval=0.5)
+    cpu = psutil.cpu_percent(interval=0.5)
 
-    mem = psutil.virtual_memory()
-    mem_used = mem.used / (1024 ** 2)
-    mem_total = mem.total / (1024 ** 2)
-    mem_percent = mem.percent
+    mem_used, mem_total = get_docker_memory()
+    if mem_used is None:
+        mem = psutil.virtual_memory()
+        mem_used = mem.used / 1024 / 1024
+        mem_total = mem.total / 1024 / 1024
 
     disk = shutil.disk_usage("/")
-    disk_used = disk.used / (1024 ** 2)
-    disk_total = disk.total / (1024 ** 2)
-    disk_percent = (disk.used / disk.total) * 100
+    disk_used = disk.used / 1024 / 1024
+    disk_total = disk.total / 1024 / 1024
 
     net = psutil.net_io_counters()
-    net_in = net.bytes_recv / (1024 ** 2)
-    net_out = net.bytes_sent / (1024 ** 2)
+    net_in = net.bytes_recv / 1024 / 1024
+    net_out = net.bytes_sent / 1024 / 1024
 
     await message.channel.send(
-        f"📊 **HOSTING STATS**\n"
-        f"⏱️ Uptime: `{days}d {hours}h {minutes}m {seconds}s`\n\n"
-        f"🖥️ CPU: `{cpu_percent:.2f}%`\n"
-        f"🧠 RAM: `{mem_used:.2f} MiB / {mem_total:.2f} MiB` ({mem_percent}%)\n"
-        f"💾 DISK: `{disk_used:.2f} MiB / {disk_total:.2f} MiB` ({disk_percent:.2f}%)\n\n"
-        f"🌐 Net IN: `{net_in:.2f} MiB`\n"
-        f"🌐 Net OUT: `{net_out:.2f} MiB`"
+        "📊 HOSTING STATS\n"
+        f"⏱️ Uptime: {d}d {h}h {m}m {s}s\n"
+        f"🖥️ CPU: {cpu:.2f}%\n"
+        f"🧠 RAM: {mem_used:.2f} MiB / {mem_total:.2f} MiB\n"
+        f"💾 Disk: {disk_used:.2f} MiB / {disk_total:.2f} MiB\n"
+        f"🌐 Net IN: {net_in:.2f} MiB\n"
+        f"🌐 Net OUT: {net_out:.2f} MiB"
     )
