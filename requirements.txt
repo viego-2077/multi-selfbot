@@ -4,3 +4,4 @@ aiohttp
 brotli
 pillow
 pyfiglet
+psutil
